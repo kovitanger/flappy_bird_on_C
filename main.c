@@ -5,11 +5,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define SCREEN_WIDTH 800
+#define SCREEN_WIDTH 350
 #define SCREEN_HEIGHT 600
 #define GRAVITY 0.8f
 #define JUMP_STRENGTH -10.0f
-#define PIPE_WIDTH 50
+#define PIPE_WIDTH 52
+#define PIPE_HEIGHT 400
 #define PIPE_GAP 150
 #define HORIZONTAL_PIPE_SPACING 200
 #define PIPE_SPAWN_INTERVAL (PIPE_WIDTH + HORIZONTAL_PIPE_SPACING)
@@ -65,7 +66,7 @@ void update_bird(Bird *bird) {
         bird->velocity = 0;
     }
 
-    if (bird->y > SCREEN_HEIGHT - GROUND_HEIGHT - 24) { // Учитываем высоту птицы
+    if (bird->y > SCREEN_HEIGHT - GROUND_HEIGHT - 24) {
         bird->y = SCREEN_HEIGHT - GROUND_HEIGHT - 24;
         bird->velocity = 0;
     }
@@ -93,7 +94,7 @@ void update_pipes(PipePair *pipes, int *score) {
 }
 
 bool check_collision(Bird *bird, PipePair *pipes) {
-    SDL_Rect bird_rect = {(int)bird->x, (int)bird->y, 34, 24}; // Размеры птицы
+    SDL_Rect bird_rect = {(int)bird->x, (int)bird->y, 34, 24};
     for (int i = 0; i < PIPE_COUNT; i++) {
         SDL_Rect pipe_rect_top = {pipes[i].x, 0, PIPE_WIDTH, pipes[i].height};
         SDL_Rect pipe_rect_bottom = {pipes[i].x, pipes[i].height + PIPE_GAP, PIPE_WIDTH, SCREEN_HEIGHT - pipes[i].height - PIPE_GAP - GROUND_HEIGHT};
@@ -104,37 +105,49 @@ bool check_collision(Bird *bird, PipePair *pipes) {
             return true;
         }
     }
+
+    if (bird->y + 24 >= SCREEN_HEIGHT - GROUND_HEIGHT) {
+        return true;
+    }
+
     return false;
 }
 
-void render(SDL_Renderer *renderer, Bird *bird, PipePair *pipes, int score, TTF_Font *font, bool game_over, SDL_Texture *base_texture, SDL_Texture *bird_texture) {
-    SDL_SetRenderDrawColor(renderer, 135, 206, 235, 255);
-    SDL_RenderClear(renderer);
+void render(SDL_Renderer *renderer, Bird *bird, PipePair *pipes, int score, 
+           TTF_Font *font, bool game_over, SDL_Texture *base_texture, 
+           SDL_Texture *bird_texture, SDL_Texture *gameover_texture,
+           SDL_Texture *background_texture, SDL_Texture *pipe_texture) {
+    // Background
+    SDL_RenderCopy(renderer, background_texture, NULL, NULL);
 
-    // Потолок
-    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-    SDL_Rect ceiling_rect = {0, -CEILING_HEIGHT, SCREEN_WIDTH, CEILING_HEIGHT};
-    SDL_RenderFillRect(renderer, &ceiling_rect);
+    // Pipe
+    for (int i = 0; i < PIPE_COUNT; i++) {
+        SDL_Rect top_pipe_rect = {
+            pipes[i].x, 
+            pipes[i].height - PIPE_HEIGHT,
+            PIPE_WIDTH, 
+            PIPE_HEIGHT
+        };
+        SDL_RenderCopyEx(renderer, pipe_texture, NULL, &top_pipe_rect, 0, NULL, SDL_FLIP_VERTICAL);
 
-    // Земля
+        SDL_Rect bottom_pipe_rect = {
+            pipes[i].x, 
+            pipes[i].height + PIPE_GAP,
+            PIPE_WIDTH, 
+            PIPE_HEIGHT
+        };
+        SDL_RenderCopy(renderer, pipe_texture, NULL, &bottom_pipe_rect);
+    }
+
+    // Base
     SDL_Rect base_rect = {0, SCREEN_HEIGHT - GROUND_HEIGHT, SCREEN_WIDTH, GROUND_HEIGHT};
     SDL_RenderCopy(renderer, base_texture, NULL, &base_rect);
 
-    // Птица
-    SDL_Rect bird_rect = {(int)bird->x, (int)bird->y, 34, 24}; // Размеры текстуры птицы
+    // Bird
+    SDL_Rect bird_rect = {(int)bird->x, (int)bird->y, 34, 24};
     SDL_RenderCopy(renderer, bird_texture, NULL, &bird_rect);
 
-    // Трубы
-    SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
-    for (int i = 0; i < PIPE_COUNT; i++) {
-        SDL_Rect top_pipe_rect = {pipes[i].x, 0, PIPE_WIDTH, pipes[i].height};
-        SDL_RenderFillRect(renderer, &top_pipe_rect);
-
-        SDL_Rect bottom_pipe_rect = {pipes[i].x, pipes[i].height + PIPE_GAP, PIPE_WIDTH, SCREEN_HEIGHT - pipes[i].height - PIPE_GAP - GROUND_HEIGHT};
-        SDL_RenderFillRect(renderer, &bottom_pipe_rect);
-    }
-
-    // Счет
+    // Check
     char scoreText[20];
     sprintf(scoreText, "Score: %d", score);
     SDL_Surface *surface = TTF_RenderText_Solid(font, scoreText, (SDL_Color){255, 255, 255, 255});
@@ -146,12 +159,11 @@ void render(SDL_Renderer *renderer, Bird *bird, PipePair *pipes, int score, TTF_
 
     // Game Over
     if (game_over) {
-        SDL_Surface *game_over_surface = TTF_RenderText_Solid(font, "Game Over! Press SPACE to restart.", (SDL_Color){255, 0, 0, 255});
-        SDL_Texture *game_over_texture = SDL_CreateTextureFromSurface(renderer, game_over_surface);
-        SDL_Rect game_over_rect = {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 2, game_over_surface->w, game_over_surface->h};
-        SDL_RenderCopy(renderer, game_over_texture, NULL, &game_over_rect);
-        SDL_FreeSurface(game_over_surface);
-        SDL_DestroyTexture(game_over_texture);
+        SDL_Rect gameover_rect;
+        SDL_QueryTexture(gameover_texture, NULL, NULL, &gameover_rect.w, &gameover_rect.h);
+        gameover_rect.x = (SCREEN_WIDTH - gameover_rect.w) / 2;
+        gameover_rect.y = (SCREEN_HEIGHT - gameover_rect.h) / 2;
+        SDL_RenderCopy(renderer, gameover_texture, NULL, &gameover_rect);
     }
 
     SDL_RenderPresent(renderer);
@@ -181,8 +193,11 @@ int main() {
     TTF_Font *font = TTF_OpenFont("/home/kovitang/Документы/flappy_bird_on_C/assets/arial.ttf", 24);
     SDL_Texture *base_texture = load_texture("/home/kovitang/Документы/flappy_bird_on_C/assets/base.png", renderer);
     SDL_Texture *bird_texture = load_texture("/home/kovitang/Документы/flappy_bird_on_C/assets/bird.png", renderer);
+    SDL_Texture *gameover_texture = load_texture("/home/kovitang/Документы/flappy_bird_on_C/assets/gameover.png", renderer);
+    SDL_Texture *background_texture = load_texture("/home/kovitang/Документы/flappy_bird_on_C/assets/background.png", renderer);
+    SDL_Texture *pipe_texture = load_texture("/home/kovitang/Документы/flappy_bird_on_C/assets/pipe.png", renderer);
 
-    if (!font || !base_texture || !bird_texture) {
+    if (!font || !base_texture || !bird_texture || !gameover_texture || !background_texture || !pipe_texture) {
         printf("Failed to load resources!\n");
         return 1;
     }
@@ -212,10 +227,15 @@ int main() {
             }
         }
 
-        render(renderer, &bird, pipes, score, font, game_over, base_texture, bird_texture);
+        render(renderer, &bird, pipes, score, font, game_over, 
+              base_texture, bird_texture, gameover_texture, 
+              background_texture, pipe_texture);
         SDL_Delay(16);
     }
 
+    SDL_DestroyTexture(pipe_texture);
+    SDL_DestroyTexture(background_texture);
+    SDL_DestroyTexture(gameover_texture);
     SDL_DestroyTexture(bird_texture);
     SDL_DestroyTexture(base_texture);
     TTF_CloseFont(font);
