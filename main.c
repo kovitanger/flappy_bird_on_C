@@ -178,9 +178,9 @@ int main() {
     SDL_Window *window = SDL_CreateWindow("Flappy Bird", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
-    TTF_Font *font = TTF_OpenFont("/home/kovitang/Документы/flappy_bird/assets/arial.ttf", 24);
-    SDL_Texture *base_texture = load_texture("/home/kovitang/Документы/flappy_bird/assets/base.png", renderer);
-    SDL_Texture *bird_texture = load_texture("/home/kovitang/Документы/flappy_bird/assets/bird.png", renderer);
+    TTF_Font *font = TTF_OpenFont("/home/kovitang/Документы/flappy_bird_on_C/assets/arial.ttf", 24);
+    SDL_Texture *base_texture = load_texture("/home/kovitang/Документы/flappy_bird_on_C/assets/base.png", renderer);
+    SDL_Texture *bird_texture = load_texture("/home/kovitang/Документы/flappy_bird_on_C/assets/bird.png", renderer);
 
     if (!font || !base_texture || !bird_texture) {
         printf("Failed to load resources!\n");

@@ -1,0 +1,24 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build Flappy Bird",
+            "type": "shell",
+            "command": "gcc",
+            "args": [
+                "/home/kovitang/Документы/flappy_bird_on_C/main.c",
+                "-o", "/home/kovitang/Документы/flappy_bird_on_C/main",
+                "-I/usr/include/SDL2",
+                "-D_REENTRANT",
+                "-lSDL2",
+                "-lSDL2_image",
+                "-lSDL2_ttf"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$gcc"]
+        }
+    ]
+}
